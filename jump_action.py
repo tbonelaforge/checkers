@@ -1,3 +1,5 @@
+import json
+
 class JumpAction:
     def __init__(self, color, pos1, pos2, pos3):
         self.action_type = 'jump'
@@ -9,3 +11,15 @@ class JumpAction:
 
     def __repr__(self):
         return "curr: {} - jumped: {} - final: {}".format(self.current_pos, self.jumped_pos, self.final_pos)
+
+    def model_dump(self):
+        return {
+            "type": "jump",
+            "current": self.current_pos,
+            "jumped": self.jumped_pos,
+            "final": self.final_pos
+        }
+
+    def to_json(self):
+        obj = self.model_dump()
+        return json.dumps(obj)

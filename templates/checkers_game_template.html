@@ -1,0 +1,36 @@
+<html>
+<style>
+      table {
+  border-collapse: collapse;
+  border: 1px solid black;
+}
+
+table td {
+    border: 1px solid black;
+    width: 1.5em;
+    height: 1.5em;
+}
+table td.grey {
+    background-color: lightgrey;
+}
+table td.grey.highlighted {
+    background-color: lightgreen;
+}
+span.red {
+    color: red;
+}
+</style>
+<script type="text/javascript">
+    /*
+        [{"type": "move", "current": [1, 4], "final": [0, 3]},{"type": "move", "current": [1, 4], "final": [0, 5]},{"type": "move", "current": [3, 6], "final": [2, 7]}];
+    */
+    var moves = INSERT_JSON_HERE;
+    var currentPlayer = INSERT_CURRENT_PLAYER_HERE;    
+</script>
+<script type="text/javascript" src="/static/checkers-ui.js"></script>
+<body>
+  INSERT_TABLE_HERE
+  <div id="winner-container">
+    INSERT_WINNER_MESSAGE_HERE
+  </div>
+ </body>
