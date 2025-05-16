@@ -1,5 +1,19 @@
-from jump_action import JumpAction
-from move_action import MoveAction
+from actions.jump_action import JumpAction
+from actions.jump_action import JumpAction
+from actions.move_action import MoveAction
+from actions.move_action import MoveAction
+
+from typing import Dict, Literal
+
+# Example board positions: {'0,1': ['r', 'm'], '0,3': ['r', 'm'],}
+BoardPosition = tuple[Literal['r', 'b'], Literal['m', 'k']]
+BoardPositions = Dict[str, BoardPosition]
+
+def get_opponent(current_player):
+    if current_player == 'b':
+        return 'r'
+    else:
+        return 'b'
 
 def get_display_char(c, t):
     if c == 'r':
@@ -29,13 +43,32 @@ def is_out_of_bounds(pos):
         return True
     return False
 
+
+def get_jump_target(jumper_pos, jumpee_pos):
+    vector = (
+        jumpee_pos[0] - jumper_pos[0],
+        jumpee_pos[1] - jumper_pos[1]
+    )
+    jump_target = (
+        jumpee_pos[0] + vector[0],
+        jumpee_pos[1] + vector[1]
+    )
+    return jump_target
     
 class CheckersBoard:
 
 
+    @staticmethod
+    def from_board_positions(board_positions: BoardPositions):
+        positions = dict()
+        for (pos_key, piece) in board_positions.items():
+            pos = tuple(map(int, pos_key.split(',')))
+            positions[pos] = piece
+        return CheckersBoard(positions)
+
     
     @staticmethod
-    def get_initial_positions():
+    def generate_initial_positions():
         initial_positions = dict()
         for red_row in [0, 1, 2]:
             for j in range(8):
@@ -58,10 +91,85 @@ class CheckersBoard:
             for i in range(8)
         ]
         if initial_positions is None:
-            initial_positions = CheckersBoard.get_initial_positions()
+            initial_positions = CheckersBoard.generate_initial_positions()
         for (pos, piece) in initial_positions.items():
             (i, j) = pos
             self.board[i][j] = piece
+
+    def get_features(self):
+        x1 = 0 # black pieces
+        x2 = 0 # red pieces
+        x3 = 0 # black kings
+        x4 = 0 # red kings
+        x5 = 0 # black threatened
+        x6 = 0 # red threatened
+        for i in range(len(self.board)):
+            row = self.board[i]
+            for j in range(len(row)):
+                cell = self.board[i][j]
+                if cell is None:
+                    continue
+                (color, piece) = cell
+                if color == 'b':
+                    x1 += 1
+                    if piece == 'k':
+                        x3 += 1
+                    if self.is_threatened((i, j)):
+                        x5 += 1
+                else: # color == 'r'
+                    x2 += 1
+                    if piece == 'k':
+                        x4 += 1
+                    if self.is_threatened((i, j)):
+                        x6 += 1
+        return [x1, x2, x3, x4, x5, x6] 
+
+    def is_threatened(self, pos):
+        (i, j) = pos
+        (this_color, this_piece) = self.board[i][j]
+        opponent_color = get_opponent(this_color)
+        i_dir = -1 if this_color == 'b' else 1
+
+        # Check opponent adjacent squares
+        for j_dir in [-1, 1]:
+            opponent_pos = (i + i_dir, j + j_dir)
+            if not is_out_of_bounds(opponent_pos) and not self.is_empty(opponent_pos):
+                if self.get_color(opponent_pos) == opponent_color:
+                    jump_target = get_jump_target(opponent_pos, pos)
+                    if not is_out_of_bounds(jump_target) and self.is_empty(jump_target):
+                        return True
+        
+        # Check my adjacent squares
+        i_dir *= -1
+        for j_dir in [-1, 1]:
+            adjacent_pos = (i + i_dir, j + j_dir)
+            if not is_out_of_bounds(adjacent_pos) and not self.is_empty(adjacent_pos):
+                if self.get_color(adjacent_pos) == opponent_color and self.get_piece_type(adjacent_pos) == 'k':
+                    # return True
+                    jump_target = get_jump_target(adjacent_pos, pos)
+                    if not is_out_of_bounds(jump_target) and self.is_empty(jump_target):
+                        return True
+        return False
+
+        
+
+    def get_current_positions_json(self) -> BoardPositions:
+        '''
+        current_positions = {
+        '0,1' : ('r', 'm'),
+        '0,3' : ('r', 'k')
+        }
+        '''
+        current_positions = dict()
+        for i in range(len(self.board)):
+            row = self.board[i]
+            for j in range(len(row)):
+                cell = row[j]
+                if cell is None:
+                    continue
+                current_positions[f'{i},{j}'] = [cell[0], cell[1]]
+        return current_positions
+
 
     def is_empty(self, pos):
         (i, j) = pos
@@ -93,6 +201,11 @@ class CheckersBoard:
         (i, j) = pos
         return self.board[i][j][1]
 
+    def get_display_char(self, i, j):
+        piece = self.board[i][j]
+        (c, t) = piece
+        return get_display_char(c, t)
+
     def get_i_dir(self, color):
         return -1 if color == 'b' else 1
 
@@ -121,14 +234,20 @@ class CheckersBoard:
                 i_dir = self.get_i_dir(color)
                 for forward_pos in self.get_diagonals(pos, i_dir):
                     if self.is_valid_move(forward_pos):
-                        next_moves.append(MoveAction(color, pos, forward_pos))
+                        next_moves.append(MoveAction(
+                            color=color,
+                            current_pos=pos,
+                            final_pos=forward_pos
+                        ))
                 if self.get_piece_type(pos) == 'k':
                     for backward_pos in self.get_diagonals(pos, -1 * i_dir):
                         if self.is_valid_move(backward_pos):
-                            next_moves.append(MoveAction(color, pos, backward_pos))
+                            next_moves.append(MoveAction(
+                                color=color,
+                                current_pos=pos,
+                                final_pos=backward_pos
+                            ))
         return next_moves
-                                      
-                    
     
     def get_valid_next_actions(self, color, previous_action=None):
         if previous_action is not None and previous_action.color == color:
@@ -138,6 +257,11 @@ class CheckersBoard:
         if len(valid_jumps) > 0:
             return valid_jumps
         return self.get_valid_next_moves(color)
+    
+    def print_valid_next_actions_json(self, color, previous_action=None):
+        actions = self.get_valid_next_actions(color, previous_action)
+        to_print = [a.model_dump_json() for a in actions]
+        return "[{}]".format(",".join(to_print))
 
 
     def get_valid_next_jumps(self, color):
@@ -162,23 +286,43 @@ class CheckersBoard:
         pos2 = (i + i_dir, j - 1)
         pos3 = (i + 2 * i_dir, j - 2)
         if self.is_valid_jump(pos1, pos2, pos3):
-            jumps.append(JumpAction(color, pos1, pos2, pos3))
+            jumps.append(JumpAction(
+                color=color,
+                current_pos=pos1,
+                jumped_pos=pos2,
+                final_pos=pos3
+            ))
 
         pos2 = (i + i_dir, j + 1)
         pos3 = (i + 2 * i_dir, j + 2)
         if self.is_valid_jump(pos1, pos2, pos3):
-            jumps.append(JumpAction(color, pos1, pos2, pos3))
+            jumps.append(JumpAction(
+                color=color,
+                current_pos=pos1,
+                jumped_pos=pos2,
+                final_pos=pos3
+            ))
             
         if self.get_piece_type(pos1) == 'k': # try backwards
             pos2 = (i - i_dir, j - 1)
             pos3 = (i - 2 * i_dir, j - 2)
             if self.is_valid_jump(pos1, pos2, pos3):
-                jumps.append(JumpAction(color, pos1, pos2, pos3))
+                jumps.append(JumpAction(
+                    color=color,
+                    current_pos=pos1,
+                    jumped_pos=pos2,
+                    final_pos=pos3
+                ))
 
             pos2 = (i - i_dir, j + 1)
             pos3 = (i - 2 * i_dir, j + 2)
             if self.is_valid_jump(pos1, pos2, pos3):
-                jumps.append(JumpAction(color, pos1, pos2, pos3))
+                jumps.append(JumpAction(
+                    color=color,
+                    current_pos=pos1,
+                    jumped_pos=pos2,
+                    final_pos=pos3
+                ))
         return jumps
 
     def apply_action(self, action):
@@ -219,6 +363,31 @@ class CheckersBoard:
         for j in range(8):
             print(' {}'.format(j), end='')
         print()
+
+    def html_print(self):
+        html = '<table id="checkers-board">'
+        def string_id(i, j):
+            return "{}_{}".format(str(i), str(j))
+        
+        for i in range(8):
+            html += '<tr>'
+            for j in range(8):
+                if is_dark(i, j):
+                    html += '<td class="grey" i={} j={} id={}>'.format(i, j, string_id(i, j))
+                else:
+                    html += '<td i={} j={} id={}>'.format(i, j, string_id(i, j))
+                if self.is_empty((i, j)):
+                    html += ' '
+                else:
+                    display_char = self.get_display_char(i, j)
+                    if display_char.lower() == 'r':
+                        html += '<span class="red">{}</span>'.format(display_char)
+                    else:
+                        html += display_char
+                html += '</td>'
+            html += '</tr>'
+        html += '</table>'
+        return html
 
 
 
@@ -296,3 +465,22 @@ if __name__ == "__main__":
     print("For black, all available next_actions are: ")
     all_black_actions = test_board3.get_valid_next_actions('b')
     print(all_black_actions)
+
+    print("Testing the html_print function...")
+    html = test_board3.html_print()
+    print("Got html: ")
+    print(html)
+
+    print("All red actions (in json) are: ")
+    actions_json = test_board3.print_valid_next_actions_json('r')
+    print(actions_json)
+
+    with open("templates/checkers_game_template.html") as f, open("test_html.html", 'w') as f_out:
+        template = f.read()
+        templated = template.replace('INSERT_TABLE_HERE', html)
+        templated = templated.replace('INSERT_JSON_HERE', actions_json)
+        f_out.write(templated)
+        print("Just wrote the templated stuff...")
+        
+
+        

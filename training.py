@@ -1,5 +1,9 @@
 import numpy as np
 
+def get_x_from_board_stats(b_stats):
+    x = np.concatenate(([1], b_stats[:len(b_stats) - 1]))
+    return x
+
 def v_hat(w, x):
     return np.dot(w, x)
 
@@ -12,19 +16,11 @@ def train4(initial_w, initial_training_data):
     nu = 0.1
     
     for i in range(num_passes):
-        # print("w is: ")
-        # print(w)
-        # print("Squared Error is: ")
         this_error = get_total_squared_error(w, training_data)
-        # print(this_error)
         if this_error < best_error:
             best_error = this_error
             best_w = np.copy(w)
-        else:
-            # print("This error is not less than best_error...")
-            pass
-        
-        # print(this_error)
+
         np.random.shuffle(training_data)
             
         for b_stats in training_data:
@@ -36,7 +32,6 @@ def train4(initial_w, initial_training_data):
             for i in range(len(w)):
                 w_delta[i] = 1.0 * nu * error_term *  x[i]
             w += w_delta
-        
 
     return (best_w, best_error)
 
@@ -50,20 +45,10 @@ def train3(initial_w, initial_training_data):
     nu = 0.1
     
     for i in range(num_passes):
-        # print("w is: ")
-        # print(w)
-        # print("Squared Error is: ")
         this_error = get_total_squared_error(w, training_data)
-        # print(this_error)
         if this_error < best_error:
             best_error = this_error
             best_w = np.copy(w)
-        else:
-            # print("This error is not less than best_error...")
-            pass
-        
-        # print(this_error)
-        # np.random.shuffle(training_data)
             
         for b_stats in training_data:
             x = np.concatenate(([1], b_stats[:len(b_stats) - 1]))
@@ -103,26 +88,13 @@ def process_training_examples(w, training_examples):
     total_squared_error = 0.0
     for b_stats in training_examples:
         x = np.concatenate(([1], b_stats[:len(b_stats) - 1]))
-        print("Considering x: ")
-        print(x)
         v_train_x = b_stats[len(b_stats) - 1]
-        print("The v_train value is: ")
-        print(v_train_x)
         v_hat_x = v_hat(w, x)
-        print("The current value of v_hat_x is: ")
-        print(v_hat_x)
         error_term = v_train_x - v_hat_x 
         total_squared_error += np.pow(error_term, 2)
-        print("The error term is: ")
-        print(error_term)
         w_delta = np.array([0.0 for i in range(len(w))])
         for i in range(len(x)):
-            print("nu * error_term is: ")
-            print(nu * error_term)
-            
             w_delta[i] = nu * error_term * x[i]
-        print("The w_delta is: ")
-        print(w_delta)
         w_delta_total += w_delta
     return w_delta_total, total_squared_error
 
