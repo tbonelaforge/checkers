@@ -49,6 +49,7 @@ def print_winner_message(winner):
     return '<span id="winner-message"> %s WINS!</span>' % ('RED' if winner == 'r' else 'BLACK')
 
 def record_action(player, action: Action, resulting_board: BoardPositions):
+    game_step = GameStep(
         move=action,
         resulting_state=resulting_board
     )
