@@ -9,6 +9,6 @@ if __name__ == "__main__":
     # print("Done! now check the database! (filesystem...)")
 
     print("Reading all games from the database...")
-    for game_history in read_all_games():
-        print("Yielded game_history: ")
-        print(game_history)
+    for move_history in read_all_games():
+        print("Yielded move_history: ")
+        print(move_history)

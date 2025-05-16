@@ -1,5 +1,5 @@
 /*
-var moves = [{"type": "move", "current": [1, 4], "final": [0, 3]},{"type": "move", "current": [1, 4], "final": [0, 5]},{"type": "move", "current": [3, 6], "final": [2, 7]}];
+var moves = [{"action_type":"move","color":"b","current_pos":[5,0],"final_pos":[4,1]},{"action_type":"move",...}]
 */
 /*
 var currentPlayer = 'r'; // Could also be 'b'
@@ -65,7 +65,7 @@ function findCorrespondingMove(finalPositionSrcElement) {
     }
     const [i, j] = getCoords(finalPositionSrcElement);
     return theseMoves.find(function(move) {
-        return (move.final[0] === i && move.final[1] === j);
+        return (move.final_pos[0] === i && move.final_pos[1] === j);
     });
 }
 
@@ -83,7 +83,7 @@ function isActive(srcElement) {
 function getMoveElements(theseMoves) {
     const moveElements = [];
     for (const move of theseMoves) {
-        const moveId = `${move.final[0]}_${move.final[1]}`;
+        const moveId = `${move.final_pos[0]}_${move.final_pos[1]}`;
         const moveElement = document.getElementById(moveId);
         moveElements.push(moveElement);
     }
@@ -153,13 +153,13 @@ function handleMouseEnter(event) {
 
 function processMoves(moves) {
     /*
-        moves = [{"type": "move", "current": [1, 4], "final": [0, 3]},{"type": "move", "current": [1, 4], "final": [0, 5]},{"type": "move", "current": [3, 6], "final": [2, 7]}];
+        moves = [{"action_type":"move","color":"b","current_pos":[5,0],"final_pos":[4,1]},{"action_type":"move",...}]
     */
     // Need: to know which positions have moves available, and for those, which new positions the move produces.
     const moveHash = {}
     for (const move of moves) {
-        const i = move.current[0];
-        const j = move.current[1];
+        const i = move.current_pos[0];
+        const j = move.current_pos[1];
         if (!moveHash[i]) {
             moveHash[i] = {};
         }

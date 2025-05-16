@@ -2,6 +2,13 @@ import os
 
 import json
 
+from sharedtypes.move_history import MoveHistory
+from sharedtypes.game_step import GameStep
+
+from typing import Generator, List
+
+
+
 
 DATA_DIR = 'data'
 COUNTER_FILENAME = 'howmany.txt'
@@ -37,21 +44,22 @@ def increment_counter():
 def get_filename_for_game_number(n):
     return f'{DATA_DIR}/{GAMES_DIR}/game{n:05}.json'
 
-def record_game(move_history):
+def record_game(move_history: MoveHistory):
     num_games = read_counter()
     new_filename = get_filename_for_game_number(num_games + 1)
     with open(new_filename, 'w') as nf:
-        nf.write(json.dumps(move_history))
+        nf.write(move_history.model_dump_json())
     increment_counter()
 
-def read_all_games():
+def read_all_games() -> Generator[List[GameStep]]:
     num_games = read_counter()
     for n in range(1, num_games + 1):
         game_file = get_filename_for_game_number(n)
         with open(game_file, 'r') as gf:
-            game_json = gf.read()
-            game_dict = json.loads(game_json)
-            yield game_dict
+            game_steps_json = gf.read()
+            game_steps = json.loads(game_steps_json)
+            move_history = MoveHistory(game_steps)
+            yield move_history.root
 
 
         

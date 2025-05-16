@@ -1,5 +1,13 @@
-from jump_action import JumpAction
-from move_action import MoveAction
+from actions.jump_action import JumpAction
+from actions.jump_action import JumpAction
+from actions.move_action import MoveAction
+from actions.move_action import MoveAction
+
+from typing import Dict, Literal
+
+# Example board positions: {'0,1': ['r', 'm'], '0,3': ['r', 'm'],}
+BoardPosition = tuple[Literal['r', 'b'], Literal['m', 'k']]
+BoardPositions = Dict[str, BoardPosition]
 
 def get_opponent(current_player):
     if current_player == 'b':
@@ -51,9 +59,9 @@ class CheckersBoard:
 
 
     @staticmethod
-    def from_positions_json(positions_json):
+    def from_board_positions(board_positions: BoardPositions):
         positions = dict()
-        for (pos_key, piece) in positions_json.items():
+        for (pos_key, piece) in board_positions.items():
             pos = tuple(map(int, pos_key.split(',')))
             positions[pos] = piece
         return CheckersBoard(positions)
@@ -124,11 +132,9 @@ class CheckersBoard:
 
         # Check opponent adjacent squares
         for j_dir in [-1, 1]:
-            # opponent_pos = (i + i_dir, j - 1)
             opponent_pos = (i + i_dir, j + j_dir)
             if not is_out_of_bounds(opponent_pos) and not self.is_empty(opponent_pos):
                 if self.get_color(opponent_pos) == opponent_color:
-                    # return True
                     jump_target = get_jump_target(opponent_pos, pos)
                     if not is_out_of_bounds(jump_target) and self.is_empty(jump_target):
                         return True
@@ -147,7 +153,7 @@ class CheckersBoard:
 
         
 
-    def get_current_positions_json(self):
+    def get_current_positions_json(self) -> BoardPositions:
         '''
         current_positions = {
         '0,1' : ('r', 'm'),
@@ -228,14 +234,20 @@ class CheckersBoard:
                 i_dir = self.get_i_dir(color)
                 for forward_pos in self.get_diagonals(pos, i_dir):
                     if self.is_valid_move(forward_pos):
-                        next_moves.append(MoveAction(color, pos, forward_pos))
+                        next_moves.append(MoveAction(
+                            color=color,
+                            current_pos=pos,
+                            final_pos=forward_pos
+                        ))
                 if self.get_piece_type(pos) == 'k':
                     for backward_pos in self.get_diagonals(pos, -1 * i_dir):
                         if self.is_valid_move(backward_pos):
-                            next_moves.append(MoveAction(color, pos, backward_pos))
+                            next_moves.append(MoveAction(
+                                color=color,
+                                current_pos=pos,
+                                final_pos=backward_pos
+                            ))
         return next_moves
-                                      
-                    
     
     def get_valid_next_actions(self, color, previous_action=None):
         if previous_action is not None and previous_action.color == color:
@@ -248,7 +260,7 @@ class CheckersBoard:
     
     def print_valid_next_actions_json(self, color, previous_action=None):
         actions = self.get_valid_next_actions(color, previous_action)
-        to_print = map(lambda a: a.to_json(), actions)
+        to_print = [a.model_dump_json() for a in actions]
         return "[{}]".format(",".join(to_print))
 
 
@@ -274,23 +286,43 @@ class CheckersBoard:
         pos2 = (i + i_dir, j - 1)
         pos3 = (i + 2 * i_dir, j - 2)
         if self.is_valid_jump(pos1, pos2, pos3):
-            jumps.append(JumpAction(color, pos1, pos2, pos3))
+            jumps.append(JumpAction(
+                color=color,
+                current_pos=pos1,
+                jumped_pos=pos2,
+                final_pos=pos3
+            ))
 
         pos2 = (i + i_dir, j + 1)
         pos3 = (i + 2 * i_dir, j + 2)
         if self.is_valid_jump(pos1, pos2, pos3):
-            jumps.append(JumpAction(color, pos1, pos2, pos3))
+            jumps.append(JumpAction(
+                color=color,
+                current_pos=pos1,
+                jumped_pos=pos2,
+                final_pos=pos3
+            ))
             
         if self.get_piece_type(pos1) == 'k': # try backwards
             pos2 = (i - i_dir, j - 1)
             pos3 = (i - 2 * i_dir, j - 2)
             if self.is_valid_jump(pos1, pos2, pos3):
-                jumps.append(JumpAction(color, pos1, pos2, pos3))
+                jumps.append(JumpAction(
+                    color=color,
+                    current_pos=pos1,
+                    jumped_pos=pos2,
+                    final_pos=pos3
+                ))
 
             pos2 = (i - i_dir, j + 1)
             pos3 = (i - 2 * i_dir, j + 2)
             if self.is_valid_jump(pos1, pos2, pos3):
-                jumps.append(JumpAction(color, pos1, pos2, pos3))
+                jumps.append(JumpAction(
+                    color=color,
+                    current_pos=pos1,
+                    jumped_pos=pos2,
+                    final_pos=pos3
+                ))
         return jumps
 
     def apply_action(self, action):
@@ -444,13 +476,9 @@ if __name__ == "__main__":
     print(actions_json)
 
     with open("templates/checkers_game_template.html") as f, open("test_html.html", 'w') as f_out:
-        
         template = f.read()
-        # print(template)
         templated = template.replace('INSERT_TABLE_HERE', html)
         templated = templated.replace('INSERT_JSON_HERE', actions_json)
-        # print("The resulting templated html is: ")
-        # print(templated)
         f_out.write(templated)
         print("Just wrote the templated stuff...")
         

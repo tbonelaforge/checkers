@@ -1,30 +1,26 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 
-from checkers_board import CheckersBoard, get_opponent
-from typing import List, Optional, Union
+from checkers_board import CheckersBoard, get_opponent, BoardPositions
+from typing import List, Optional, Union, Dict
 from pydantic import BaseModel
 
-from move_action import MoveAction
-from jump_action import JumpAction
+from actions.move_action import MoveAction
+from actions.move_action import MoveAction
+from actions.jump_action import JumpAction
+from actions.jump_action import JumpAction
 
 from games_database import record_game
 import random
 
+from sharedtypes.action import Action
+from sharedtypes.move_history import GameStep, MoveHistory
 
-class MoveBody(BaseModel):
-    type: str
-    current: List[int]
-    final: List[int]
-    
-class JumpBody(BaseModel):
-    type: str
-    current: List[int]
-    final: List[int]
-    jumped: List[int]
 
 class ComputerMoveBody(BaseModel):
     type: str
+
+
 
 
 app = FastAPI()
@@ -42,32 +38,28 @@ current_player = 'b'
 
 previous_action = None
 
-move_history = []
 
+
+
+
+move_history : List[GameStep] = []
 
 
 def print_winner_message(winner):
     return '<span id="winner-message"> %s WINS!</span>' % ('RED' if winner == 'r' else 'BLACK')
 
-def hydrate_action(body: Union[MoveBody, JumpBody]):
-    if body.type == 'move':
-        action = MoveAction('b', body.current, body.final)
-    elif body.type == 'jump':
-        action = JumpAction('b', body.current, body.jumped, body.final)
-    return action
-
-def record_action(player, action, resulting_board):
+def record_action(player, action: Action, resulting_board: BoardPositions):
+        move=action,
+        resulting_state=resulting_board
+    )
     move_history.append(
-        {
-            'move':{'player': player, 'action': action.model_dump()},
-            "resulting_state": resulting_board
-        }
+        game_step
     )
 
-def handle_black_move(body: Union[MoveBody, JumpBody]):
+def handle_black_move(action: Action):
     global previous_action
     global current_player
-    action = hydrate_action(body)
+
     checkers_board.apply_action(action)
     record_action('b', action, checkers_board.get_current_positions_json())
     previous_action = action
@@ -102,7 +94,7 @@ def template_html():
     winner_message = ''
     if actions_json == '[]':
         winner_message = print_winner_message(get_opponent(current_player))
-        record_game(move_history)
+        record_game(MoveHistory(move_history))
     with open("templates/checkers_game_template.html") as t:
         template = t.read()
         templated = template.replace('INSERT_TABLE_HERE', html)
@@ -112,13 +104,12 @@ def template_html():
         return templated
 
 
-
 @app.get("/static/{path}", response_class=FileResponse)
 def static_file(path: str):
     return "./static/{}".format(path)
 
 @app.post("/move")
-def apply_move(body: Optional[Union[MoveBody, JumpBody, ComputerMoveBody]]):
+def apply_move(body: Optional[Union[MoveAction, JumpAction, ComputerMoveBody]]):
     global previous_action
     if current_player == 'b':
         handle_black_move(body)        
