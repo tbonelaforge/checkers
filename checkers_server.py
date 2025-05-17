@@ -13,8 +13,8 @@ from actions.jump_action import JumpAction
 from games_database import record_game
 import random
 
-from sharedtypes.action import Action
-from sharedtypes.move_history import GameStep, MoveHistory
+from shared.types.action import Action
+from shared.types.move_history import GameStep, MoveHistory
 
 
 class ComputerMoveBody(BaseModel):

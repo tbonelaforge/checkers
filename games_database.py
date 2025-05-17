@@ -2,8 +2,8 @@ import os
 
 import json
 
-from sharedtypes.move_history import MoveHistory
-from sharedtypes.game_step import GameStep
+from shared.types.move_history import MoveHistory
+from shared.types.game_step import GameStep
 
 from typing import Generator, List
 

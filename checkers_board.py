@@ -3,7 +3,7 @@ from actions.jump_action import JumpAction
 from actions.move_action import MoveAction
 from actions.move_action import MoveAction
 
-from typing import Dict, Literal
+from typing import Dict, Literal, List
 
 # Example board positions: {'0,1': ['r', 'm'], '0,3': ['r', 'm'],}
 BoardPosition = tuple[Literal['r', 'b'], Literal['m', 'k']]
@@ -96,13 +96,13 @@ class CheckersBoard:
             (i, j) = pos
             self.board[i][j] = piece
 
-    def get_features(self):
-        x1 = 0 # black pieces
-        x2 = 0 # red pieces
-        x3 = 0 # black kings
-        x4 = 0 # red kings
-        x5 = 0 # black threatened
-        x6 = 0 # red threatened
+    def get_features(self) -> List[float]:
+        x1 = 0.0 # black pieces
+        x2 = 0.0 # red pieces
+        x3 = 0.0 # black kings
+        x4 = 0.0 # red kings
+        x5 = 0.0 # black threatened
+        x6 = 0.0 # red threatened
         for i in range(len(self.board)):
             row = self.board[i]
             for j in range(len(row)):
