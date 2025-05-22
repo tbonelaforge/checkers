@@ -1,7 +1,13 @@
 import json
 import csv
 from typing import List
-from games_database import read_all_games
+
+import sys
+
+print("Inside estimate_training_data, the sys.path is: ")
+print(sys.path)
+
+from file_storage.games_database import read_all_games
 from checkers_board import CheckersBoard
 from shared.types.game_step import GameStep
 from target_function import TargetFunction
@@ -9,7 +15,7 @@ from target_function import TargetFunction
 from shared.types.move_history import MoveHistory
 import numpy as np
 
-MAX_GAMES_TO_PROCESS = 1
+MAX_GAMES_TO_PROCESS = None
 
 def dump_array_to_csv(data: np.ndarray, filename: str, delimiter=','):
 
@@ -75,22 +81,14 @@ def estimate_v(tf: TargetFunction, x: List[float], move_history: MoveHistory, i:
         return tf(x)
     
     # tf.is_ambigous(x)
-    print("The target function says this is an 'ambiguous' set of board positions...(%f)" % (tf(x)))
     successor_game_step = find_successor_game_step(move_history, i)
     if successor_game_step is None:
-        print("Could not find a valid successor, going to use the function as-is: ")
-        print(tf(x))
         v = tf(x)
         return v
     else:
-        print("Found successor game step: ")
-        print(successor_game_step)
         next_checkers_board = get_checkers_board_at_game_step(successor_game_step, should_print=True)
-        print("Using the function on the successor gives x, v ")
         next_x = get_training_vector(next_checkers_board)
-        print(next_x)
         v = tf(next_x)
-        print(v)
         return v
 
 
@@ -105,36 +103,14 @@ def estimate_training_data(tf=None) -> np.ndarray:
         if MAX_GAMES_TO_PROCESS is not None:
             if num_games_processed >= MAX_GAMES_TO_PROCESS:
                 break
-        print("PROCESSING MOVE HISTORY: ")
-        print(move_history)
         for i in range(len(move_history)):
             game_step: GameStep = move_history[i]
-            print("EXAMINING BOARD POSITIONS:")
             checkers_board = get_checkers_board_at_game_step(game_step, should_print=True)
             x = get_training_vector(checkers_board)
             v: float = estimate_v(tf, x, move_history, i)
             training_row = x + [v]
             training_data.append(training_row)
-            # if tf.is_ambiguous(x):
-            #     print("The target function says this is an 'ambiguous' set of board positions...(%f)" % (tf(x)))
-            #     successor_game_step = find_successor_game_step(move_history, i)
-            #     if successor_game_step is None:
-            #         print("Could not find a valid successor, going to use the function as-is: ")
-            #         print(tf(x))
-            #         v = tf(x)
-            #     else:
-            #         print("Found successor game step: ")
-            #         print(successor_game_step)
-            #         next_checkers_board = get_checkers_board_at_game_step(successor_game_step, should_print=True)
-            #         print("Using the function on the successor gives x, v ")
-            #         next_x = get_training_vector(next_checkers_board)
-            #         print(next_x)
-            #         v = tf(next_x)
-            #         print(v)
-            # else:
-            #     print("Using the actual value")
-            #     print(tf(x))
-            #     v = tf(x)
+            \
         num_games_processed += 1
     return np.array(training_data)
             

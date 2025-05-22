@@ -5,17 +5,18 @@ from training import get_x_from_board_stats
 from shared.initial_w import initial_w
 
 class TargetFunction:
-    def __init__(self, w=None):
+    def __init__(self, w: np.ndarray=None):
         if w is None:
-            w = np.array([
-                -2.3259462,
-                -31.64356388,
-                29.2439482,
-                -1.0,
-                1.0,
-                1.0,
-                -1.0
-            ])
+            # w = np.array([
+            #     -2.3259462,
+            #     -31.64356388,
+            #     29.2439482,
+            #     -1.0,
+            #     1.0,
+            #     1.0,
+            #     -1.0
+            # ])
+            w = initial_w
         self.w = np.array(w)
 
     def __call__(self, x):

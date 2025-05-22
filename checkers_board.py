@@ -5,6 +5,8 @@ from actions.move_action import MoveAction
 
 from typing import Dict, Literal, List
 
+from shared.types.action import Action
+
 # Example board positions: {'0,1': ['r', 'm'], '0,3': ['r', 'm'],}
 BoardPosition = tuple[Literal['r', 'b'], Literal['m', 'k']]
 BoardPositions = Dict[str, BoardPosition]
@@ -249,7 +251,7 @@ class CheckersBoard:
                             ))
         return next_moves
     
-    def get_valid_next_actions(self, color, previous_action=None):
+    def get_valid_next_actions(self, color: Literal['b', 'r'], previous_action: Action=None) -> List[Action]:
         if previous_action is not None and previous_action.color == color:
             pos = previous_action.final_pos
             return self.jumps_from_position(pos)
