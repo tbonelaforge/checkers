@@ -181,8 +181,20 @@ function isGameOver() {
     return false;
 }
 
+function handlePlayAgain(e) {
+    console.log("Inside handlePlayAgain, got called...");
+    fetch("/restart", {
+        method: "POST",
+    }).then(function(fetchResposne) {
+        window.location.reload()
+    })
+}
+
 window.onload = function () {
-    if (isGameOver()) {
+    const playAgainButton = document.getElementById('play-again');
+    playAgainButton.onclick = handlePlayAgain;
+    if (isGameOver()) {    
+        removeClass(playAgainButton, 'hidden');
         return;
     }
     if (currentPlayer == 'r') {

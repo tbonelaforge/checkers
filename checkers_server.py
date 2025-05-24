@@ -8,7 +8,7 @@ from .adjust_weights import (
 from .checkers_board import CheckersBoard, get_opponent, BoardPositions
 from .checkers_game import CheckersAI
 from .evaluate_ml import create_ml_ai_red
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 from pydantic import BaseModel
 
 from actions.move_action import MoveAction
@@ -31,22 +31,11 @@ class ComputerMoveBody(BaseModel):
 
 app = FastAPI()
 
-checkers_board = CheckersBoard()
-# test_positions3 = {
-#         (1, 4) : ('b', 'm'),
-#         (3, 6) : ('b', 'm'),
-#     }
 
-# checkers_board = CheckersBoard(test_positions3)
-current_player = "b"
-# current_player = 'r'
-
-
-previous_action = None
-
-
-move_history: List[GameStep] = []
-
+checkers_board: CheckersBoard
+current_player: Literal["b", "r"]
+previous_action: Action
+move_history: List[GameStep]
 w: np.ndarray
 tf: TargetFunction
 ml_ai_red: CheckersAI
@@ -59,7 +48,16 @@ def update_ai():
     ml_ai_red = create_ml_ai_red(tf)
 
 
-update_ai()
+def initialize_game_state():
+    global checkers_board, current_player, previous_action, move_history
+    checkers_board = CheckersBoard()
+    current_player = "b"
+    previous_action = None
+    move_history = []
+    update_ai()
+
+
+initialize_game_state()
 
 
 def print_winner_message(winner):
@@ -94,6 +92,8 @@ def handle_red_move():
         "r", previous_action=previous_action
     )
     computer_action = ml_ai_red(valid_next_actions, "r", checkers_board)
+    print("COMPUTER PLAYED: ")
+    print(computer_action)
     checkers_board.apply_action(computer_action)
     record_action("r", computer_action, checkers_board.get_current_positions_json())
     previous_action = computer_action
@@ -120,7 +120,7 @@ def template_html():
 
         (adjusted_w, adjusted_error) = train_from_last_epoch(w)
         record_weights(adjusted_w)
-        update_ai()
+        # update_ai()
 
     with open("templates/checkers_game_template.html") as t:
         template = t.read()
@@ -145,3 +145,13 @@ def apply_move(body: Optional[Union[MoveAction, JumpAction, ComputerMoveBody]]):
         handle_black_move(body)
     else:  # current_player == 'r'
         handle_red_move()
+
+
+@app.post("/restart")
+def reset_game_state():
+    print("Resetting game state!")
+    print("The old ai was using weights: ")
+    print(w)
+    initialize_game_state()
+    print("Now the new ai is using weights: ")
+    print(w)
