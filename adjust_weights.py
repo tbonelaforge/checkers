@@ -80,6 +80,7 @@ def adjust_weights(
 def train_from_last_epoch(w: np.ndarray) -> tuple[np.ndarray, float]:
     training_data = read_last_epoch()
     original_error = get_total_squared_error(w, training_data)
+    print("ORIGINAL ERROR: ", original_error)
     (new_w, new_error) = adjust_weights(w, training_data)
     print(new_w, new_error)
     return (new_w, new_error)
